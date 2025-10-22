@@ -1,1 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products CRUD</title>
+</head>
+<body>
+    <h1>Products</h1>
+    <ul id="products-list"></ul>
+    <h2>Add Product</h2>
+    <form id="add-product-form">
+        <input type="text" name="name" placeholder="Name" required>
+        <input type="text" name="sku" placeholder="SKU" required>
+        <input type="number" name="price" placeholder="Price" step="0.01" required>
+        <input type="number" name="stock" placeholder="Stock" value="0">
+        <button type="submit">Add</button>
+    </form>
+    <script>
+        const list = document.getElementById("products-list");
+        const form = document.getElementById("add-product-form");
+
+        async function fetchProducts() {
+            const res = await fetch("/products");
+            const data = await res.json();
+            list.innerHTML = "";
+            data.forEach(p => {
+                const li = document.createElement("li");
+                li.textContent = `${p.name} (${p.sku}) - $${p.price} - stock: ${p.stock}`;
+                list.appendChild(li);
+            });
+        }
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const payload = {
+                name: formData.get("name"),
+                sku: formData.get("sku"),
+                price: parseFloat(formData.get("price")),
+                stock: parseInt(formData.get("stock"))
+            };
+            await fetch("/products", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+            form.reset();
+            fetchProducts();
+        });
+
+        fetchProducts();
+    </script>
+</body>
+</html>
 
