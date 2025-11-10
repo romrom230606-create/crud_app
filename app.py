@@ -5,13 +5,13 @@ from flask import Flask, request, jsonify, render_template
 from models import db, Product
 from dotenv import load_dotenv
 
-# Підвантажуємо локальний .env, якщо він існує
+
 if os.path.exists('.env'):
     load_dotenv('.env')
 
 app = Flask(__name__)
 
-# Беремо змінні середовища (GitHub Secrets або локальні .env)
+
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", 5432)
 DB_USER = os.getenv("DB_USER", "postgres")
@@ -21,7 +21,7 @@ DB_NAME = os.getenv("DB_NAME", "mydb")
 app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Ініціалізація db після конфігурації
+
 db.init_app(app)
 
 def error_response(status, error, field_errors):
