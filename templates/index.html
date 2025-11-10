@@ -1,316 +1,114 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Products CRUD</title>
   <style>
-    :root {
-      --bg: #f6f8fa;
-      --card: #ffffff;
-      --muted: #6b7280;
-      --primary: #2563eb;
-      --danger: #dc2626;
-      --ghost: #f3f4f6;
-      --success: #16a34a;
-      --table-border: #e6e9ee;
-    }
-    html,body { height:100%; margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#111; }
-    .app { max-width:1200px; margin:24px auto; padding:16px; box-sizing:border-box; }
-    header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
-    h1 { margin:0; font-size:20px; font-weight:600; }
-    .top-controls { display:flex; gap:10px; align-items:center; }
-    .btn {
-      padding:8px 12px; border-radius:8px; border:0; cursor:pointer; font-size:14px; display:inline-flex; align-items:center; gap:8px;
-    }
-    .btn-primary { background:var(--primary); color:#fff; box-shadow:0 1px 0 rgba(0,0,0,0.04); }
-    .btn-ghost { background:var(--ghost); color:#111; border:1px solid #e5e7eb; }
-    .btn-danger { background:var(--danger); color:#fff; }
-    .btn-edit { background:#059669; color:#fff; border-radius:6px; padding:6px 8px; font-size:13px; }
-    .btn-delete { background:var(--danger); color:#fff; border-radius:6px; padding:6px 8px; font-size:13px; }
-    .table-wrap { background:var(--card); border-radius:10px; padding:12px; box-shadow:0 1px 2px rgba(15,23,42,0.03); }
-    table { width:100%; border-collapse:collapse; font-size:14px; }
-    th,td { padding:10px 12px; border-bottom:1px solid var(--table-border); text-align:left; vertical-align:middle; }
-    thead th { background:#fafafa; font-weight:600; position:sticky; top:0; z-index:2; }
-    tbody tr:hover td { background:#fbfdff; }
-    .meta { color:var(--muted); font-size:12px; }
-    .actions { display:flex; gap:8px; }
-    .small { font-size:13px; color:var(--muted); }
-    .msg { padding:10px 12px; border-radius:8px; margin-bottom:12px; }
-    .msg.success { background:#ecfdf5; color:#065f46; border:1px solid #bbf7d0; }
-    .msg.error { background:#fff1f2; color:#7f1d1d; border:1px solid #fecaca; }
-    .loader { display:inline-block; width:16px; height:16px; border:2px solid #cbd5e1; border-top-color:var(--primary); border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; margin-left:8px }
-    @keyframes spin { to { transform: rotate(360deg) } }
-    .empty { padding:18px; text-align:center; color:var(--muted); }
-
-    .modal-backdrop { position:fixed; inset:0; display:none; background:rgba(15,23,42,0.45); align-items:center; justify-content:center; z-index:50; }
-    .modal { width:420px; max-width:92%; background:var(--card); border-radius:12px; padding:16px; box-shadow:0 10px 30px rgba(15,23,42,0.12); }
-    .modal header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-    .modal h3 { margin:0; font-size:16px; }
-    .form-row { margin-bottom:10px; }
-    label { display:block; font-size:13px; margin-bottom:6px; color:#374151; }
-    input[type="text"], input[type="number"] { width:100%; padding:10px; border-radius:8px; border:1px solid #e6e9ee; box-sizing:border-box; font-size:14px; }
-    .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
-
-    @media (max-width:600px) {
-      th,td { padding:8px; font-size:13px; }
-      .modal { width:95%; }
-    }
+    body{font-family:Arial;margin:20px}
+    .error{color:#9b1c1c;background:#fff1f2;padding:10px;border-radius:6px;margin-bottom:10px}
+    .success{color:#064e3b;background:#ecfdf5;padding:10px;border-radius:6px;margin-bottom:10px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border:1px solid #ddd;padding:8px}
+    form{margin-top:12px;padding:10px;border:1px solid #eee;border-radius:6px}
   </style>
 </head>
 <body>
-  <div class="app">
-    <header>
-      <h1>Products CRUD</h1>
-      <div class="top-controls">
-        <button id="add-btn" class="btn btn-primary">Add Product</button>
-      </div>
-    </header>
+  <h1>Products CRUD</h1>
+  <div id="message"></div>
 
-    <div id="message"></div>
+  <table>
+    <thead><tr><th>ID</th><th>Name</th><th>Code</th><th>Email</th><th>BirthDate</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="8">Loading...</td></tr></tbody>
+  </table>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:60px">ID</th>
-            <th>Name</th>
-            <th style="width:140px">Product code</th>
-            <th style="width:100px">Price</th>
-            <th style="width:80px">Stock</th>
-            <th style="width:160px">Created</th>
-            <th style="width:160px">Updated</th>
-            <th style="width:150px">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="rows">
-          <tr><td colspan="8" class="empty">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="modal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true">
-      <header>
-        <h3 id="modal-title">Add product</h3>
-        <button id="close-modal" class="btn btn-ghost">Close</button>
-      </header>
-
-      <form id="product-form">
-        <input type="hidden" id="product-id" />
-        <div class="form-row">
-          <label for="name">Name</label>
-          <input id="name" name="name" type="text" required />
-        </div>
-
-        <div class="form-row">
-          <label for="code">Product code</label>
-          <input id="code" name="code" type="text" required />
-        </div>
-
-        <div class="form-row">
-          <label for="price">Price</label>
-          <input id="price" name="price" type="number" step="0.01" min="0" required />
-        </div>
-
-        <div class="form-row">
-          <label for="stock">Stock</label>
-          <input id="stock" name="stock" type="number" step="1" min="0" value="0" />
-        </div>
-
-        <div class="modal-actions">
-          <button id="cancel-btn" type="button" class="btn btn-ghost">Cancel</button>
-          <button id="save-btn" type="submit" class="btn btn-primary">Save</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <form id="productForm" novalidate>
+    <input type="hidden" id="id" />
+    <label>Name <input id="name" required minlength="3" maxlength="50" /></label><br/>
+    <label>Email <input id="email" type="email" required /></label><br/>
+    <label>Birth date <input id="birthDate" type="date" max="{{ today }}" required /></label><br/>
+    <label>Code <input id="code" pattern="[A-Za-z0-9-]{4,20}" required /></label><br/>
+    <label>Price <input id="price" type="number" step="0.01" min="0.01" required /></label><br/>
+    <label>Stock <input id="stock" type="number" step="1" min="0" value="0" /></label><br/>
+    <button type="submit">Save</button>
+    <button type="button" id="resetBtn">Reset</button>
+  </form>
 
   <script>
-    const API_BASE = "/products";
-    const rowsEl = document.getElementById("rows");
-    const addBtn = document.getElementById("add-btn");
-    const modal = document.getElementById("modal");
-    const closeModalBtn = document.getElementById("close-modal");
-    const cancelBtn = document.getElementById("cancel-btn");
-    const form = document.getElementById("product-form");
-    const idEl = document.getElementById("product-id");
+    const API = "/products";
+    const msgEl = document.getElementById("message");
+    const rows = document.getElementById("rows");
+    const form = document.getElementById("productForm");
+    const idEl = document.getElementById("id");
     const nameEl = document.getElementById("name");
+    const emailEl = document.getElementById("email");
+    const birthEl = document.getElementById("birthDate");
     const codeEl = document.getElementById("code");
     const priceEl = document.getElementById("price");
     const stockEl = document.getElementById("stock");
-    const messageEl = document.getElementById("message");
-    const saveBtn = document.getElementById("save-btn");
 
-    function showMessage(text, type = "success") {
-      messageEl.innerHTML = `<div class="msg ${type === "error" ? "error" : "success"}">${text}</div>`;
-      setTimeout(() => { if (messageEl.innerHTML) messageEl.innerHTML = ""; }, 4000);
+    function show(type, text){
+      msgEl.innerHTML = `<div class="${type==='error'?'error':'success'}">${text}</div>`;
+      setTimeout(()=>msgEl.innerHTML="",5000);
     }
 
-    function setBusy(on) {
-      saveBtn.disabled = on;
-      addBtn.disabled = on;
+    async function load(){
+      const r = await fetch(API);
+      const data = await r.json();
+      if (!data.length) rows.innerHTML = '<tr><td colspan="8">No products</td></tr>';
+      else rows.innerHTML = data.map(p=>`<tr>
+        <td>${p.id}</td><td>${p.name}</td><td>${p.code||p.sku||''}</td><td>${p.email||''}</td><td>${p.birth_date||''}</td><td>${Number(p.price).toFixed(2)}</td><td>${p.stock}</td>
+        <td><button onclick="edit(${p.id})">Edit</button> <button onclick="del(${p.id})">Delete</button></td></tr>`).join('');
     }
 
-    function openModal(edit=false) {
-      modal.style.display = "flex";
-      modal.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-      if (!edit) {
-        idEl.value = "";
-        form.reset();
-        document.getElementById("modal-title").textContent = "Add product";
-        saveBtn.textContent = "Save";
-      } else {
-        document.getElementById("modal-title").textContent = "Edit product";
-        saveBtn.textContent = "Save";
-      }
+    async function edit(id){
+      const r = await fetch(`${API}/${id}`);
+      if (r.status===404){ show('error','Not found'); return; }
+      const p = await r.json();
+      idEl.value=p.id; nameEl.value=p.name; emailEl.value=p.email||''; birthEl.value=p.birth_date||''; codeEl.value=p.code||p.sku||''; priceEl.value=p.price; stockEl.value=p.stock;
     }
 
-    function closeModal() {
-      modal.style.display = "none";
-      modal.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
+    async function del(id){
+      if(!confirm('Delete?')) return;
+      const r = await fetch(`${API}/${id}`, {method:'DELETE'});
+      if (r.status===404) show('error','Not found');
+      else if (!r.ok) show('error','Delete failed');
+      else { show('success','Deleted'); load(); }
     }
 
-    function formatDate(iso) {
-      if (!iso) return "";
-      const d = new Date(iso);
-      return d.toLocaleString();
-    }
-
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return "";
-      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]));
-    }
-
-    async function fetchProducts() {
-      setBusy(true);
-      try {
-        const res = await fetch(API_BASE);
-        if (!res.ok) throw new Error(`Failed to load (${res.status})`);
-        const data = await res.json();
-        renderRows(data);
-      } catch (err) {
-        rowsEl.innerHTML = `<tr><td colspan="8" class="empty">Error loading: ${err.message}</td></tr>`;
-        showMessage(`Error loading products: ${err.message}`, "error");
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    function renderRows(items) {
-      if (!items.length) {
-        rowsEl.innerHTML = '<tr><td colspan="8" class="empty">No products yet</td></tr>';
-        return;
-      }
-      rowsEl.innerHTML = items.map(p => `
-        <tr>
-          <td>${p.id}</td>
-          <td>${escapeHtml(p.name)}</td>
-          <td>${escapeHtml(p.sku || p.code || "")}</td>
-          <td>${Number(p.price).toFixed(2)}</td>
-          <td>${p.stock}</td>
-          <td class="small">${formatDate(p.created_at)}</td>
-          <td class="small">${formatDate(p.updated_at)}</td>
-          <td class="actions">
-            <button class="btn-edit" onclick="onEdit(${p.id})">Edit</button>
-            <button class="btn-delete" onclick="onDelete(${p.id})">Delete</button>
-          </td>
-        </tr>`).join("");
-    }
-
-    async function onEdit(id) {
-      setBusy(true);
-      try {
-        const res = await fetch(`${API_BASE}/${id}`);
-        if (res.status === 404) { showMessage("Product not found", "error"); return; }
-        if (!res.ok) throw new Error(`Load failed (${res.status})`);
-        const p = await res.json();
-        idEl.value = p.id;
-        nameEl.value = p.name;
-        codeEl.value = p.sku ?? "";
-        priceEl.value = p.price;
-        stockEl.value = p.stock;
-        openModal(true);
-      } catch (err) {
-        showMessage(`Cannot load product: ${err.message}`, "error");
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    async function onDelete(id) {
-      if (!confirm("Delete product?")) return;
-      setBusy(true);
-      try {
-        const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
-        if (res.status === 404) { showMessage("Product not found", "error"); return; }
-        if (!res.ok) throw new Error(`Delete failed (${res.status})`);
-        showMessage("Product deleted");
-        await fetchProducts();
-        if (idEl.value == id) closeModal();
-      } catch (err) {
-        showMessage(`Delete error: ${err.message}`, "error");
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    function validate(payload) {
-      if (!payload.name || payload.name.trim().length < 1) return "Name is required";
-      if (!payload.code || payload.code.trim().length < 1) return "Product code is required";
-      if (isNaN(payload.price) || payload.price < 0) return "Price must be >= 0";
-      if (!Number.isInteger(payload.stock) || payload.stock < 0) return "Stock must be integer >= 0";
-      return null;
-    }
-
-    async function onSubmit(e) {
+    form.addEventListener("submit", async e=>{
       e.preventDefault();
+      if (!form.checkValidity()){ form.reportValidity(); return; }
       const payload = {
         name: nameEl.value.trim(),
-        sku: codeEl.value.trim(),
+        email: emailEl.value.trim(),
+        birthDate: birthEl.value,
+        code: codeEl.value.trim(),
         price: parseFloat(priceEl.value),
-        stock: parseInt(stockEl.value || "0", 10)
+        stock: parseInt(stockEl.value || "0",10)
       };
-      const err = validate({ name: payload.name, code: payload.sku, price: payload.price, stock: payload.stock });
-      if (err) { showMessage(err, "error"); return; }
-      setBusy(true);
-      try {
-        const id = idEl.value;
-        const url = id ? `${API_BASE}/${id}` : API_BASE;
-        const method = id ? "PUT" : "POST";
-        const res = await fetch(url, {
-          method,
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify(payload)
-        });
-        if (res.status === 400) {
-          const body = await res.json().catch(()=>({error: "Validation error"}));
-          const msg = body.error ? JSON.stringify(body.error) : "Bad request";
-          showMessage(`Validation: ${msg}`, "error");
-          return;
+      const id = idEl.value;
+      const res = await fetch(id? `${API}/${id}`: API, {
+        method: id? "PUT":"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      const body = await res.json().catch(()=>null);
+      if (!res.ok){
+        if (body && body.fieldErrors){
+          show('error', body.fieldErrors.map(f=>`${f.field}: ${f.message}`).join('; '));
+        } else {
+          show('error', `Error ${res.status}`);
         }
-        if (res.status === 404) { showMessage("Product not found", "error"); return; }
-        if (!(res.status === 200 || res.status === 201)) throw new Error(`Request failed (${res.status})`);
-        showMessage(id ? "Product updated" : "Product created");
-        closeModal();
-        fetchProducts();
-      } catch (err) {
-        showMessage(`Save error: ${err.message}`, "error");
-      } finally {
-        setBusy(false);
+        return;
       }
-    }
+      show('success', id? 'Updated':'Created');
+      form.reset(); idEl.value=""; load();
+    });
 
-    addBtn.addEventListener("click", () => openModal(false));
-    closeModalBtn.addEventListener("click", closeModal);
-    cancelBtn.addEventListener("click", closeModal);
-    form.addEventListener("submit", onSubmit);
-    window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+    document.getElementById("resetBtn").addEventListener("click", ()=>{ form.reset(); idEl.value=""; });
 
-    fetchProducts();
+    load();
   </script>
 </body>
 </html>
