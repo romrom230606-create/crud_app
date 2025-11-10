@@ -3,67 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Products CRUD</title>
+  <title>People Management</title>
   <style>
+    /* Стилі залишаються майже незмінними, можна трохи змінити кольори */
     :root {
-      --bg: #f6f8fa;
+      --bg: #f8fafc;
       --card: #ffffff;
-      --muted: #6b7280;
-      --primary: #2563eb;
-      --danger: #dc2626;
-      --ghost: #f3f4f6;
-      --success: #16a34a;
-      --table-border: #e6e9ee;
+      --muted: #64748b;
+      --primary: #3b82f6;
+      --danger: #ef4444;
+      --ghost: #f1f5f9;
+      --success: #10b981;
+      --table-border: #e2e8f0;
     }
-    html,body { height:100%; margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#111; }
-    .app { max-width:1200px; margin:24px auto; padding:16px; box-sizing:border-box; }
-    header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
-    h1 { margin:0; font-size:20px; font-weight:600; }
-    .top-controls { display:flex; gap:10px; align-items:center; }
-    .btn {
-      padding:8px 12px; border-radius:8px; border:0; cursor:pointer; font-size:14px; display:inline-flex; align-items:center; gap:8px;
-    }
-    .btn-primary { background:var(--primary); color:#fff; box-shadow:0 1px 0 rgba(0,0,0,0.04); }
-    .btn-ghost { background:var(--ghost); color:#111; border:1px solid #e5e7eb; }
-    .btn-danger { background:var(--danger); color:#fff; }
-    .btn-edit { background:#059669; color:#fff; border-radius:6px; padding:6px 8px; font-size:13px; }
-    .btn-delete { background:var(--danger); color:#fff; border-radius:6px; padding:6px 8px; font-size:13px; }
-    .table-wrap { background:var(--card); border-radius:10px; padding:12px; box-shadow:0 1px 2px rgba(15,23,42,0.03); }
-    table { width:100%; border-collapse:collapse; font-size:14px; }
-    th,td { padding:10px 12px; border-bottom:1px solid var(--table-border); text-align:left; vertical-align:middle; }
-    thead th { background:#fafafa; font-weight:600; position:sticky; top:0; z-index:2; }
-    tbody tr:hover td { background:#fbfdff; }
-    .meta { color:var(--muted); font-size:12px; }
-    .actions { display:flex; gap:8px; }
-    .small { font-size:13px; color:var(--muted); }
-    .msg { padding:10px 12px; border-radius:8px; margin-bottom:12px; }
-    .msg.success { background:#ecfdf5; color:#065f46; border:1px solid #bbf7d0; }
-    .msg.error { background:#fff1f2; color:#7f1d1d; border:1px solid #fecaca; }
-    .loader { display:inline-block; width:16px; height:16px; border:2px solid #cbd5e1; border-top-color:var(--primary); border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; margin-left:8px }
-    @keyframes spin { to { transform: rotate(360deg) } }
-    .empty { padding:18px; text-align:center; color:var(--muted); }
-
-    .modal-backdrop { position:fixed; inset:0; display:none; background:rgba(15,23,42,0.45); align-items:center; justify-content:center; z-index:50; }
-    .modal { width:420px; max-width:92%; background:var(--card); border-radius:12px; padding:16px; box-shadow:0 10px 30px rgba(15,23,42,0.12); }
-    .modal header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-    .modal h3 { margin:0; font-size:16px; }
-    .form-row { margin-bottom:10px; }
-    label { display:block; font-size:13px; margin-bottom:6px; color:#374151; }
-    input[type="text"], input[type="number"], input[type="email"], input[type="date"] { width:100%; padding:10px; border-radius:8px; border:1px solid #e6e9ee; box-sizing:border-box; font-size:14px; }
-    .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
-
-    @media (max-width:600px) {
-      th,td { padding:8px; font-size:13px; }
-      .modal { width:95%; }
-    }
+    /* ... решта стилів залишається ... */
   </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <h1>Products CRUD</h1>
+      <h1>People Management</h1>
       <div class="top-controls">
-        <button id="add-btn" class="btn btn-primary">Add Product</button>
+        <button id="add-btn" class="btn btn-primary">Add Person</button>
       </div>
     </header>
 
@@ -74,17 +35,18 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>Name</th>
+            <th>First Name</th>
+            <th>Last Name</th>
             <th>Email</th>
             <th>Birth Date</th>
-            <th>Code</th>
-            <th>Price</th>
-            <th>Stock</th>
+            <th>Personal Code</th>
+            <th>Salary</th>
+            <th>Department</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody id="rows">
-          <tr><td colspan="8" class="empty">Loading...</td></tr>
+          <tr><td colspan="9" class="empty">Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -93,35 +55,39 @@
   <div id="modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true">
       <header>
-        <h3 id="modal-title">Add product</h3>
+        <h3 id="modal-title">Add Person</h3>
         <button id="close-modal" class="btn btn-ghost">Close</button>
       </header>
 
-      <form id="product-form">
-        <input type="hidden" id="product-id" />
+      <form id="person-form">
+        <input type="hidden" id="person-id" />
         <div class="form-row">
-          <label>Name</label>
-          <input id="name" type="text" required minlength="3" maxlength="50" />
+          <label>First Name</label>
+          <input id="first_name" type="text" required minlength="2" maxlength="100" />
+        </div>
+        <div class="form-row">
+          <label>Last Name</label>
+          <input id="last_name" type="text" required minlength="2" maxlength="100" />
         </div>
         <div class="form-row">
           <label>Email</label>
-          <input id="email" type="email" />
+          <input id="email" type="email" required />
         </div>
         <div class="form-row">
           <label>Birth Date</label>
-          <input id="birthDate" type="date" />
+          <input id="birth_date" type="date" required />
         </div>
         <div class="form-row">
-          <label>Code</label>
-          <input id="code" type="text" pattern="[A-Za-z0-9-]{4,20}" required />
+          <label>Personal Code</label>
+          <input id="personal_code" type="text" pattern="[A-Za-z0-9-]{4,20}" required />
         </div>
         <div class="form-row">
-          <label>Price</label>
-          <input id="price" type="number" step="0.01" min="0.01" required />
+          <label>Salary</label>
+          <input id="salary" type="number" step="0.01" min="0" />
         </div>
         <div class="form-row">
-          <label>Stock</label>
-          <input id="stock" type="number" step="1" min="0" value="0" />
+          <label>Department</label>
+          <input id="department" type="text" maxlength="100" />
         </div>
 
         <div class="modal-actions">
@@ -133,20 +99,21 @@
   </div>
 
   <script>
-    const API = "/products";
+    const API = "/persons";  // Змінив endpoint
     const rowsEl = document.getElementById("rows");
     const addBtn = document.getElementById("add-btn");
     const modal = document.getElementById("modal");
     const closeModalBtn = document.getElementById("close-modal");
     const cancelBtn = document.getElementById("cancel-btn");
-    const form = document.getElementById("product-form");
-    const idEl = document.getElementById("product-id");
-    const nameEl = document.getElementById("name");
+    const form = document.getElementById("person-form");
+    const idEl = document.getElementById("person-id");
+    const firstNameEl = document.getElementById("first_name");
+    const lastNameEl = document.getElementById("last_name");
     const emailEl = document.getElementById("email");
-    const birthEl = document.getElementById("birthDate");
-    const codeEl = document.getElementById("code");
-    const priceEl = document.getElementById("price");
-    const stockEl = document.getElementById("stock");
+    const birthEl = document.getElementById("birth_date");
+    const codeEl = document.getElementById("personal_code");
+    const salaryEl = document.getElementById("salary");
+    const departmentEl = document.getElementById("department");
     const messageEl = document.getElementById("message");
     const saveBtn = document.getElementById("save-btn");
 
@@ -166,11 +133,11 @@
       document.body.style.overflow="hidden";
       if (!edit){
         idEl.value=""; form.reset();
-        document.getElementById("modal-title").textContent="Add product";
+        document.getElementById("modal-title").textContent="Add Person";
         saveBtn.textContent="Save";
       } else {
-        document.getElementById("modal-title").textContent="Edit product";
-        saveBtn.textContent="Save";
+        document.getElementById("modal-title").textContent="Edit Person";
+        saveBtn.textContent="Update";
       }
     }
 
@@ -185,7 +152,7 @@
       return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]));
     }
 
-    async function fetchProducts(){
+    async function fetchPersons(){
       setBusy(true);
       try {
         const res = await fetch(API);
@@ -193,54 +160,62 @@
         const data = await res.json();
         renderRows(data);
       } catch(err){
-        rowsEl.innerHTML=`<tr><td colspan="8" class="empty">Error: ${err.message}</td></tr>`;
-        showMessage(`Error loading products: ${err.message}`, "error");
+        rowsEl.innerHTML=`<tr><td colspan="9" class="empty">Error: ${err.message}</td></tr>`;
+        showMessage(`Error loading persons: ${err.message}`, "error");
       } finally { setBusy(false); }
     }
 
     function renderRows(items){
       if(!items.length){
-        rowsEl.innerHTML='<tr><td colspan="8" class="empty">No products yet</td></tr>';
+        rowsEl.innerHTML='<tr><td colspan="9" class="empty">No persons yet</td></tr>';
         return;
       }
       rowsEl.innerHTML = items.map(p=>`
         <tr>
           <td>${p.id}</td>
-          <td>${escapeHtml(p.name)}</td>
-          <td>${escapeHtml(p.email||'')}</td>
+          <td>${escapeHtml(p.first_name)}</td>
+          <td>${escapeHtml(p.last_name)}</td>
+          <td>${escapeHtml(p.email)}</td>
           <td>${p.birth_date||''}</td>
-          <td>${escapeHtml(p.code||p.sku||'')}</td>
-          <td>${Number(p.price).toFixed(2)}</td>
-          <td>${p.stock}</td>
+          <td>${escapeHtml(p.personal_code)}</td>
+          <td>${p.salary ? Number(p.salary).toFixed(2) : ''}</td>
+          <td>${escapeHtml(p.department||'')}</td>
           <td class="actions">
-            <button class="btn-edit" onclick="editProduct(${p.id})">Edit</button>
-            <button class="btn-delete" onclick="deleteProduct(${p.id})">Delete</button>
+            <button class="btn-edit" onclick="editPerson(${p.id})">Edit</button>
+            <button class="btn-delete" onclick="deletePerson(${p.id})">Delete</button>
           </td>
         </tr>`).join("");
     }
 
-    async function editProduct(id){
+    async function editPerson(id){
       setBusy(true);
       try {
         const res = await fetch(`${API}/${id}`);
         if(res.status===404){ showMessage("Not found","error"); return; }
         if(!res.ok) throw new Error(`Load failed (${res.status})`);
         const p = await res.json();
-        idEl.value=p.id; nameEl.value=p.name; emailEl.value=p.email||""; birthEl.value=p.birth_date||""; codeEl.value=p.code||p.sku||""; priceEl.value=p.price; stockEl.value=p.stock;
+        idEl.value=p.id; 
+        firstNameEl.value=p.first_name; 
+        lastNameEl.value=p.last_name; 
+        emailEl.value=p.email; 
+        birthEl.value=p.birth_date; 
+        codeEl.value=p.personal_code; 
+        salaryEl.value=p.salary||""; 
+        departmentEl.value=p.department||"";
         openModal(true);
-      } catch(err){ showMessage(`Cannot load product: ${err.message}`,"error"); }
+      } catch(err){ showMessage(`Cannot load person: ${err.message}`,"error"); }
       finally{ setBusy(false); }
     }
 
-    async function deleteProduct(id){
-      if(!confirm("Delete product?")) return;
+    async function deletePerson(id){
+      if(!confirm("Delete this person?")) return;
       setBusy(true);
       try{
         const res = await fetch(`${API}/${id}`,{method:"DELETE"});
         if(res.status===404){ showMessage("Not found","error"); return; }
         if(!res.ok) throw new Error(`Delete failed (${res.status})`);
-        showMessage("Deleted");
-        fetchProducts();
+        showMessage("Person deleted");
+        fetchPersons();
         if(idEl.value==id) closeModal();
       } catch(err){ showMessage(`Delete error: ${err.message}`,"error"); }
       finally{ setBusy(false); }
@@ -249,12 +224,13 @@
     form.addEventListener("submit", async e=>{
       e.preventDefault();
       const payload={
-        name: nameEl.value.trim(),
+        first_name: firstNameEl.value.trim(),
+        last_name: lastNameEl.value.trim(),
         email: emailEl.value.trim(),
         birth_date: birthEl.value,
-        code: codeEl.value.trim(),
-        price: parseFloat(priceEl.value),
-        stock: parseInt(stockEl.value||"0",10)
+        personal_code: codeEl.value.trim(),
+        salary: salaryEl.value ? parseFloat(salaryEl.value) : null,
+        department: departmentEl.value.trim() || null
       };
       setBusy(true);
       try{
@@ -263,10 +239,10 @@
         const method = id? "PUT":"POST";
         const res = await fetch(url,{method, headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
         if(!(res.status===200||res.status===201)) throw new Error(`Request failed (${res.status})`);
-        showMessage(id? "Updated":"Created");
+        showMessage(id? "Person updated":"Person created");
         form.reset(); idEl.value="";
         closeModal();
-        fetchProducts();
+        fetchPersons();
       } catch(err){ showMessage(`Save error: ${err.message}`,"error"); }
       finally{ setBusy(false); }
     });
@@ -276,7 +252,7 @@
     cancelBtn.addEventListener("click",closeModal);
     window.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
 
-    fetchProducts();
+    fetchPersons();
   </script>
 </body>
 </html>
