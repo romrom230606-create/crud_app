@@ -1,22 +1,39 @@
-# CRUD Project
+# Product CRUD API
 
-## How to run
-
-1. Create PostgreSQL database on Render
-2. Add environment variables in Render:
-   DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME
-3. Push code to GitHub
-4. Deploy web service on Render
+## Production URL
+**Live Application**: https://crud-app-2fgv.onrender.com
 
 ## API Endpoints
 
-GET /products
-GET /products/<id>
-POST /products
-PUT /products/<id>
-DELETE /products/<id>
+- `GET /` - Main page with product management UI
+- `GET /products` - Get all products
+- `GET /products/<id>` - Get specific product
+- `POST /products` - Create new product
+- `PUT /products/<id>` - Update existing product
+- `DELETE /products/<id>` - Delete product
 
-## Frontend
+## Validation Rules
 
-Open `/` to see HTML page to add, edit, delete products.
+- **name**: required, 3-50 characters
+- **email**: valid email format
+- **price**: number > 0
+- **birthDate**: not later than today
+- **code**: 4-20 characters (letters, numbers, dash)
 
+## Error Responses
+
+The API returns structured error responses:
+
+```json
+{
+  "timestamp": "2025-01-11T10:30:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "fieldErrors": [
+    {
+      "field": "email",
+      "code": "INVALID_FORMAT", 
+      "message": "Invalid email"
+    }
+  ]
+}
