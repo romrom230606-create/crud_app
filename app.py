@@ -3,18 +3,25 @@ import re
 from datetime import datetime, date
 from flask import Flask, request, jsonify, render_template
 from models import db, Product
+from dotenv import load_dotenv
+
+# Підвантажуємо локальний .env, якщо він існує
+if os.path.exists('.env'):
+    load_dotenv('.env')
 
 app = Flask(__name__)
 
-DB_HOST = os.getenv("DB_HOST")
+# Беремо змінні середовища (GitHub Secrets або локальні .env)
+DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", 5432)
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASS = os.getenv("DB_PASS", "")
+DB_NAME = os.getenv("DB_NAME", "mydb")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Ініціалізація db після конфігурації
 db.init_app(app)
 
 def error_response(status, error, field_errors):
@@ -64,9 +71,6 @@ def validate_product_payload(data, require_all=True):
             field_errors.append({"field":"code","code":"INVALID_FORMAT","message":"code: 4-20 chars letters/numbers/dash"})
     return field_errors
 
-with app.app_context():
-    db.create_all()
-
 @app.route("/")
 def index():
     return render_template("index.html", today=date.today().isoformat())
@@ -91,7 +95,6 @@ def create_product():
         return error_response(400, "Bad Request", errors)
 
     code = data.get("code") or data.get("sku")
-    # duplicate check (code stored in sku for compatibility)
     if Product.query.filter((Product.sku == code) | (Product.code == code)).first():
         return error_response(409, "Conflict", [{"field":"code","code":"DUPLICATE","message":"Product code already exists"}])
 
@@ -124,7 +127,8 @@ def update_product(pid):
     if "email" in data:
         p.email = data.get("email")
     if "birthDate" in data or "birth_date" in data:
-        p.birth_date = (datetime.fromisoformat(data.get("birthDate") or data.get("birth_date")).date() if (data.get("birthDate") or data.get("birth_date")) else None)
+        p.birth_date = (datetime.fromisoformat(data.get("birthDate") or data.get("birth_date")).date() 
+                        if (data.get("birthDate") or data.get("birth_date")) else None)
     if "price" in data:
         p.price = data.get("price")
     if "stock" in data:
@@ -148,5 +152,8 @@ def delete_product(pid):
     db.session.commit()
     return jsonify({"message":"Deleted"}), 200
 
+# Виконання при запуску скрипта локально
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    with app.app_context():
+        db.create_all()
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
