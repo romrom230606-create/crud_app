@@ -29,3 +29,8 @@ jobs:
         TESTING: 'True'
       run: |
         python -m pytest -q
+    
+    - name: Deploy to Render
+      if: github.ref == 'refs/heads/main' && success()
+      run: |
+        curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
