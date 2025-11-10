@@ -12,13 +12,25 @@ class TestConfig:
 
 @pytest.fixture
 def client():
-    app.config.from_object(TestConfig)
+    # Зберігаємо оригінальний конфіг
+    original_uri = app.config['SQLALCHEMY_DATABASE_URI']
+    
+    # Тимчасово змінюємо на SQLite для тестів
+    app.config['SQLALCHEMY_DATABASE_URI'] = TestConfig.SQLALCHEMY_DATABASE_URI
+    app.config['TESTING'] = True
+    
+    with app.app_context():
+        db.create_all()
+    
     with app.test_client() as client:
-        with app.app_context():
-            db.create_all() 
         yield client
-        with app.app_context():
-            db.drop_all()  
+    
+    with app.app_context():
+        db.drop_all()
+    
+    # Повертаємо оригінальний конфіг
+    app.config['SQLALCHEMY_DATABASE_URI'] = original_uri
+    app.config['TESTING'] = False
 
 
 def test_post_invalid_email(client):
