@@ -1,4 +1,5 @@
 import json
+import os
 import pytest
 from app import app, db
 from models import Product
@@ -12,12 +13,26 @@ class TestConfig:
 
 @pytest.fixture
 def client():
-    # Зберігаємо оригінальний конфіг
+    # Зберігаємо оригінальні значення
     original_uri = app.config['SQLALCHEMY_DATABASE_URI']
+    original_testing = app.config.get('TESTING', False)
     
-    # Тимчасово змінюємо на SQLite для тестів
+    # Зберігаємо та видаляємо змінні середовища
+    original_env_vars = {}
+    env_vars_to_remove = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASS', 'DB_NAME', 'DATABASE_URL']
+    
+    for var in env_vars_to_remove:
+        if var in os.environ:
+            original_env_vars[var] = os.environ[var]
+            del os.environ[var]  # Видаляємо змінні середовища
+    
+    # Встановлюємо тестовий конфіг ПЕРЕД створенням контексту
     app.config['SQLALCHEMY_DATABASE_URI'] = TestConfig.SQLALCHEMY_DATABASE_URI
     app.config['TESTING'] = True
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Примусово переконфігуруємо базу даних
+    db.init_app(app)
     
     with app.app_context():
         db.create_all()
@@ -28,9 +43,13 @@ def client():
     with app.app_context():
         db.drop_all()
     
-    # Повертаємо оригінальний конфіг
+    # Повертаємо оригінальні значення
     app.config['SQLALCHEMY_DATABASE_URI'] = original_uri
-    app.config['TESTING'] = False
+    app.config['TESTING'] = original_testing
+    
+    # Повертаємо змінні середовища
+    for var, value in original_env_vars.items():
+        os.environ[var] = value
 
 
 def test_post_invalid_email(client):

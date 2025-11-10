@@ -25,7 +25,5 @@ jobs:
         pip install pytest python-dotenv
 
     - name: Run tests
-      env:
-        TESTING: 'True'
       run: |
         python -m pytest -q
