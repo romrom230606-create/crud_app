@@ -3,27 +3,34 @@ import re
 from datetime import datetime, date
 from flask import Flask, request, jsonify, render_template
 from models import db, Product
-from dotenv import load_dotenv
-
-
-if os.path.exists('.env'):
-    load_dotenv('.env')
 
 app = Flask(__name__)
 
+# Додаємо перевірку на тестове середовище
+if os.getenv('TESTING') == 'True' or os.getenv('PYTEST_CURRENT_TEST'):
+    # Використовуємо SQLite для тестів
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    print("Using SQLite for testing")
+else:
+    # Використовуємо PostgreSQL для продакшену
+    # Завантажуємо .env тільки для локальної розробки
+    from dotenv import load_dotenv
+    if os.path.exists('.env'):
+        load_dotenv('.env')
+    
+    DB_HOST = os.getenv("DB_HOST", "localhost")
+    DB_PORT = os.getenv("DB_PORT", 5432)
+    DB_USER = os.getenv("DB_USER", "postgres")
+    DB_PASS = os.getenv("DB_PASS", "")
+    DB_NAME = os.getenv("DB_NAME", "mydb")
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    print(f"Using PostgreSQL: {DB_HOST}:{DB_PORT}/{DB_NAME}")
 
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", 5432)
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASS = os.getenv("DB_PASS", "")
-DB_NAME = os.getenv("DB_NAME", "mydb")
-
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 
 db.init_app(app)
 
+# Решта коду залишається незмінною...
 def error_response(status, error, field_errors):
     return jsonify({
         "timestamp": datetime.utcnow().isoformat() + "Z",
