@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>People Management</title>
+  <title>Products CRUD</title>
   <style>
     :root {
       --bg: #f6f8fa;
@@ -61,9 +61,9 @@
 <body>
   <div class="app">
     <header>
-      <h1>People Management</h1>
+      <h1>Products CRUD</h1>
       <div class="top-controls">
-        <button id="add-btn" class="btn btn-primary">Add Person</button>
+        <button id="add-btn" class="btn btn-primary">Add Product</button>
       </div>
     </header>
 
@@ -74,18 +74,17 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>First Name</th>
-            <th>Last Name</th>
+            <th>Name</th>
             <th>Email</th>
             <th>Birth Date</th>
-            <th>Personal Code</th>
-            <th>Salary</th>
-            <th>Department</th>
+            <th>Code</th>
+            <th>Price</th>
+            <th>Stock</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody id="rows">
-          <tr><td colspan="9" class="empty">Loading...</td></tr>
+          <tr><td colspan="8" class="empty">Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -94,39 +93,35 @@
   <div id="modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true">
       <header>
-        <h3 id="modal-title">Add Person</h3>
+        <h3 id="modal-title">Add product</h3>
         <button id="close-modal" class="btn btn-ghost">Close</button>
       </header>
 
-      <form id="person-form">
-        <input type="hidden" id="person-id" />
+      <form id="product-form">
+        <input type="hidden" id="product-id" />
         <div class="form-row">
-          <label>First Name</label>
-          <input id="first_name" type="text" required minlength="2" maxlength="100" />
-        </div>
-        <div class="form-row">
-          <label>Last Name</label>
-          <input id="last_name" type="text" required minlength="2" maxlength="100" />
+          <label>Name</label>
+          <input id="name" type="text" required minlength="3" maxlength="50" />
         </div>
         <div class="form-row">
           <label>Email</label>
-          <input id="email" type="email" required />
+          <input id="email" type="email" />
         </div>
         <div class="form-row">
           <label>Birth Date</label>
-          <input id="birth_date" type="date" required />
+          <input id="birthDate" type="date" />
         </div>
         <div class="form-row">
-          <label>Personal Code</label>
-          <input id="personal_code" type="text" pattern="[A-Za-z0-9-]{4,20}" required />
+          <label>Code</label>
+          <input id="code" type="text" pattern="[A-Za-z0-9-]{4,20}" required />
         </div>
         <div class="form-row">
-          <label>Salary</label>
-          <input id="salary" type="number" step="0.01" min="0" />
+          <label>Price</label>
+          <input id="price" type="number" step="0.01" min="0.01" required />
         </div>
         <div class="form-row">
-          <label>Department</label>
-          <input id="department" type="text" maxlength="100" />
+          <label>Stock</label>
+          <input id="stock" type="number" step="1" min="0" value="0" />
         </div>
 
         <div class="modal-actions">
@@ -138,21 +133,20 @@
   </div>
 
   <script>
-    const API = "/persons";
+    const API = "/products";
     const rowsEl = document.getElementById("rows");
     const addBtn = document.getElementById("add-btn");
     const modal = document.getElementById("modal");
     const closeModalBtn = document.getElementById("close-modal");
     const cancelBtn = document.getElementById("cancel-btn");
-    const form = document.getElementById("person-form");
-    const idEl = document.getElementById("person-id");
-    const firstNameEl = document.getElementById("first_name");
-    const lastNameEl = document.getElementById("last_name");
+    const form = document.getElementById("product-form");
+    const idEl = document.getElementById("product-id");
+    const nameEl = document.getElementById("name");
     const emailEl = document.getElementById("email");
-    const birthEl = document.getElementById("birth_date");
-    const codeEl = document.getElementById("personal_code");
-    const salaryEl = document.getElementById("salary");
-    const departmentEl = document.getElementById("department");
+    const birthEl = document.getElementById("birthDate");
+    const codeEl = document.getElementById("code");
+    const priceEl = document.getElementById("price");
+    const stockEl = document.getElementById("stock");
     const messageEl = document.getElementById("message");
     const saveBtn = document.getElementById("save-btn");
 
@@ -172,11 +166,11 @@
       document.body.style.overflow="hidden";
       if (!edit){
         idEl.value=""; form.reset();
-        document.getElementById("modal-title").textContent="Add Person";
+        document.getElementById("modal-title").textContent="Add product";
         saveBtn.textContent="Save";
       } else {
-        document.getElementById("modal-title").textContent="Edit Person";
-        saveBtn.textContent="Update";
+        document.getElementById("modal-title").textContent="Edit product";
+        saveBtn.textContent="Save";
       }
     }
 
@@ -191,7 +185,7 @@
       return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]));
     }
 
-    async function fetchPersons(){
+    async function fetchProducts(){
       setBusy(true);
       try {
         const res = await fetch(API);
@@ -199,62 +193,54 @@
         const data = await res.json();
         renderRows(data);
       } catch(err){
-        rowsEl.innerHTML=`<tr><td colspan="9" class="empty">Error: ${err.message}</td></tr>`;
-        showMessage(`Error loading persons: ${err.message}`, "error");
+        rowsEl.innerHTML=`<tr><td colspan="8" class="empty">Error: ${err.message}</td></tr>`;
+        showMessage(`Error loading products: ${err.message}`, "error");
       } finally { setBusy(false); }
     }
 
     function renderRows(items){
       if(!items.length){
-        rowsEl.innerHTML='<tr><td colspan="9" class="empty">No persons yet</td></tr>';
+        rowsEl.innerHTML='<tr><td colspan="8" class="empty">No products yet</td></tr>';
         return;
       }
       rowsEl.innerHTML = items.map(p=>`
         <tr>
           <td>${p.id}</td>
-          <td>${escapeHtml(p.first_name)}</td>
-          <td>${escapeHtml(p.last_name)}</td>
-          <td>${escapeHtml(p.email)}</td>
+          <td>${escapeHtml(p.name)}</td>
+          <td>${escapeHtml(p.email||'')}</td>
           <td>${p.birth_date||''}</td>
-          <td>${escapeHtml(p.personal_code)}</td>
-          <td>${p.salary ? Number(p.salary).toFixed(2) : ''}</td>
-          <td>${escapeHtml(p.department||'')}</td>
+          <td>${escapeHtml(p.code||p.sku||'')}</td>
+          <td>${Number(p.price).toFixed(2)}</td>
+          <td>${p.stock}</td>
           <td class="actions">
-            <button class="btn-edit" onclick="editPerson(${p.id})">Edit</button>
-            <button class="btn-delete" onclick="deletePerson(${p.id})">Delete</button>
+            <button class="btn-edit" onclick="editProduct(${p.id})">Edit</button>
+            <button class="btn-delete" onclick="deleteProduct(${p.id})">Delete</button>
           </td>
         </tr>`).join("");
     }
 
-    async function editPerson(id){
+    async function editProduct(id){
       setBusy(true);
       try {
         const res = await fetch(`${API}/${id}`);
         if(res.status===404){ showMessage("Not found","error"); return; }
         if(!res.ok) throw new Error(`Load failed (${res.status})`);
         const p = await res.json();
-        idEl.value=p.id; 
-        firstNameEl.value=p.first_name; 
-        lastNameEl.value=p.last_name; 
-        emailEl.value=p.email; 
-        birthEl.value=p.birth_date; 
-        codeEl.value=p.personal_code; 
-        salaryEl.value=p.salary||""; 
-        departmentEl.value=p.department||"";
+        idEl.value=p.id; nameEl.value=p.name; emailEl.value=p.email||""; birthEl.value=p.birth_date||""; codeEl.value=p.code||p.sku||""; priceEl.value=p.price; stockEl.value=p.stock;
         openModal(true);
-      } catch(err){ showMessage(`Cannot load person: ${err.message}`,"error"); }
+      } catch(err){ showMessage(`Cannot load product: ${err.message}`,"error"); }
       finally{ setBusy(false); }
     }
 
-    async function deletePerson(id){
-      if(!confirm("Delete this person?")) return;
+    async function deleteProduct(id){
+      if(!confirm("Delete product?")) return;
       setBusy(true);
       try{
         const res = await fetch(`${API}/${id}`,{method:"DELETE"});
         if(res.status===404){ showMessage("Not found","error"); return; }
         if(!res.ok) throw new Error(`Delete failed (${res.status})`);
-        showMessage("Person deleted");
-        fetchPersons();
+        showMessage("Deleted");
+        fetchProducts();
         if(idEl.value==id) closeModal();
       } catch(err){ showMessage(`Delete error: ${err.message}`,"error"); }
       finally{ setBusy(false); }
@@ -263,13 +249,12 @@
     form.addEventListener("submit", async e=>{
       e.preventDefault();
       const payload={
-        first_name: firstNameEl.value.trim(),
-        last_name: lastNameEl.value.trim(),
+        name: nameEl.value.trim(),
         email: emailEl.value.trim(),
         birth_date: birthEl.value,
-        personal_code: codeEl.value.trim(),
-        salary: salaryEl.value ? parseFloat(salaryEl.value) : null,
-        department: departmentEl.value.trim() || null
+        code: codeEl.value.trim(),
+        price: parseFloat(priceEl.value),
+        stock: parseInt(stockEl.value||"0",10)
       };
       setBusy(true);
       try{
@@ -278,10 +263,10 @@
         const method = id? "PUT":"POST";
         const res = await fetch(url,{method, headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
         if(!(res.status===200||res.status===201)) throw new Error(`Request failed (${res.status})`);
-        showMessage(id? "Person updated":"Person created");
+        showMessage(id? "Updated":"Created");
         form.reset(); idEl.value="";
         closeModal();
-        fetchPersons();
+        fetchProducts();
       } catch(err){ showMessage(`Save error: ${err.message}`,"error"); }
       finally{ setBusy(false); }
     });
@@ -291,7 +276,7 @@
     cancelBtn.addEventListener("click",closeModal);
     window.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
 
-    fetchPersons();
+    fetchProducts();
   </script>
 </body>
 </html>

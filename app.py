@@ -2,14 +2,18 @@ import os
 import re
 from datetime import datetime, date
 from flask import Flask, request, jsonify, render_template
-from models import db, Person
+from models import db, Product
 
 app = Flask(__name__)
 
+
 if os.getenv('TESTING') == 'True' or os.getenv('PYTEST_CURRENT_TEST'):
+   
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     print("Using SQLite for testing")
 else:
+    
+   
     from dotenv import load_dotenv
     if os.path.exists('.env'):
         load_dotenv('.env')
@@ -25,25 +29,7 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
-with app.app_context():
-    # Заміни цей блок
-    with db.engine.connect() as connection:
-        connection.execute(db.text("""
-            CREATE TABLE IF NOT EXISTS persons (
-                id SERIAL PRIMARY KEY,
-                first_name VARCHAR(100) NOT NULL,
-                last_name VARCHAR(100) NOT NULL,
-                email VARCHAR(255) NOT NULL UNIQUE,
-                birth_date DATE NOT NULL,
-                personal_code VARCHAR(20) NOT NULL UNIQUE,
-                salary NUMERIC(10,2),
-                department VARCHAR(100),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """))
-        connection.commit()
-    print("✅ Persons table is ready")
+
 
 def error_response(status, error, field_errors):
     return jsonify({
@@ -53,138 +39,126 @@ def error_response(status, error, field_errors):
         "fieldErrors": field_errors
     }), status
 
-def validate_person_payload(data, require_all=True):
+def validate_product_payload(data, require_all=True):
     field_errors = []
-    first_name = (data.get("first_name") or "").strip()
-    last_name = (data.get("last_name") or "").strip()
+    name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip()
-    salary = data.get("salary")
-    birth = data.get("birth_date")
-    personal_code = (data.get("personal_code") or "").strip()
+    price = data.get("price")
+    birth = data.get("birthDate") or data.get("birth_date")
+    code = (data.get("code") or data.get("sku") or "").strip()
 
-    if require_all or "first_name" in data:
-        if len(first_name) < 2 or len(first_name) > 100:
-            field_errors.append({"field":"first_name","code":"INVALID_LENGTH","message":"First name must be 2-100 characters"})
-    if require_all or "last_name" in data:
-        if len(last_name) < 2 or len(last_name) > 100:
-            field_errors.append({"field":"last_name","code":"INVALID_LENGTH","message":"Last name must be 2-100 characters"})
+    if require_all or "name" in data:
+        if len(name) < 3 or len(name) > 50:
+            field_errors.append({"field":"name","code":"INVALID_LENGTH","message":"name: 3-50 characters"})
     if require_all or "email" in data:
         if email:
             if not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
-                field_errors.append({"field":"email","code":"INVALID_FORMAT","message":"Invalid email format"})
+                field_errors.append({"field":"email","code":"INVALID_FORMAT","message":"Invalid email"})
         else:
             field_errors.append({"field":"email","code":"REQUIRED","message":"Email is required"})
-    if require_all or "salary" in data:
-        if salary is not None:
-            try:
-                s = float(salary)
-                if s < 0:
-                    field_errors.append({"field":"salary","code":"INVALID_VALUE","message":"Salary must be positive"})
-            except Exception:
-                field_errors.append({"field":"salary","code":"INVALID_FORMAT","message":"Salary must be a number"})
-    if require_all or "birth_date" in data:
+    if require_all or "price" in data:
+        try:
+            p = float(price)
+            if p <= 0:
+                field_errors.append({"field":"price","code":"INVALID_VALUE","message":"Price must be > 0"})
+        except Exception:
+            field_errors.append({"field":"price","code":"INVALID_FORMAT","message":"Price must be a number"})
+    if require_all or "birthDate" in data or "birth_date" in data:
         if birth:
             try:
                 bd = datetime.fromisoformat(birth).date()
                 if bd > date.today():
-                    field_errors.append({"field":"birth_date","code":"INVALID_DATE","message":"Birth date cannot be in future"})
+                    field_errors.append({"field":"birthDate","code":"INVALID_DATE","message":"birthDate cannot be in future"})
             except Exception:
-                field_errors.append({"field":"birth_date","code":"INVALID_FORMAT","message":"Birth date must be ISO date (YYYY-MM-DD)"})
+                field_errors.append({"field":"birthDate","code":"INVALID_FORMAT","message":"birthDate must be ISO date (YYYY-MM-DD)"})
         else:
-            field_errors.append({"field":"birth_date","code":"REQUIRED","message":"Birth date is required"})
-    if require_all or "personal_code" in data:
-        if not re.match(r"^[A-Za-z0-9-]{4,20}$", personal_code):
-            field_errors.append({"field":"personal_code","code":"INVALID_FORMAT","message":"Personal code: 4-20 chars letters/numbers/dash"})
+            field_errors.append({"field":"birthDate","code":"REQUIRED","message":"birthDate is required"})
+    if require_all or "code" in data or "sku" in data:
+        if not re.match(r"^[A-Za-z0-9-]{4,20}$", code):
+            field_errors.append({"field":"code","code":"INVALID_FORMAT","message":"code: 4-20 chars letters/numbers/dash"})
     return field_errors
 
 @app.route("/")
 def index():
     return render_template("index.html", today=date.today().isoformat())
 
-@app.route("/persons", methods=["GET"])
-def list_persons():
-    persons = Person.query.order_by(Person.id.desc()).all()
-    return jsonify([p.to_dict() for p in persons]), 200
+@app.route("/products", methods=["GET"])
+def list_products():
+    products = Product.query.order_by(Product.id.desc()).all()
+    return jsonify([p.to_dict() for p in products]), 200
 
-@app.route("/persons/<int:pid>", methods=["GET"])
-def get_person(pid):
-    p = Person.query.get(pid)
+@app.route("/products/<int:pid>", methods=["GET"])
+def get_product(pid):
+    p = Product.query.get(pid)
     if not p:
-        return error_response(404, "Not Found", [{"field":"id","code":"NOT_FOUND","message":"Person not found"}])
+        return error_response(404, "Not Found", [{"field":"id","code":"NOT_FOUND","message":"Product not found"}])
     return jsonify(p.to_dict()), 200
 
-@app.route("/persons", methods=["POST"])
-def create_person():
+@app.route("/products", methods=["POST"])
+def create_product():
     data = request.get_json() or {}
-    errors = validate_person_payload(data, require_all=True)
+    errors = validate_product_payload(data, require_all=True)
     if errors:
         return error_response(400, "Bad Request", errors)
 
-    personal_code = data.get("personal_code")
-    email = data.get("email")
-    
-    if Person.query.filter(Person.personal_code == personal_code).first():
-        return error_response(409, "Conflict", [{"field":"personal_code","code":"DUPLICATE","message":"Personal code already exists"}])
-    
-    if Person.query.filter(Person.email == email).first():
-        return error_response(409, "Conflict", [{"field":"email","code":"DUPLICATE","message":"Email already exists"}])
+    code = data.get("code") or data.get("sku")
+    if Product.query.filter((Product.sku == code) | (Product.code == code)).first():
+        return error_response(409, "Conflict", [{"field":"code","code":"DUPLICATE","message":"Product code already exists"}])
 
-    p = Person(
-        first_name=data.get("first_name").strip(),
-        last_name=data.get("last_name").strip(),
+    p = Product(
+        name=data.get("name").strip(),
+        sku=code,
+        code=code,
         email=data.get("email"),
-        birth_date=datetime.fromisoformat(data.get("birth_date")).date() if data.get("birth_date") else None,
-        personal_code=personal_code,
-        salary=data.get("salary"),
-        department=data.get("department")
+        birth_date=(datetime.fromisoformat(data.get("birthDate")).date() if data.get("birthDate") else None),
+        price=data.get("price"),
+        stock=data.get("stock", 0)
     )
     db.session.add(p)
     db.session.commit()
     return jsonify(p.to_dict()), 201
 
-@app.route("/persons/<int:pid>", methods=["PUT"])
-def update_person(pid):
-    p = Person.query.get(pid)
+@app.route("/products/<int:pid>", methods=["PUT"])
+def update_product(pid):
+    p = Product.query.get(pid)
     if not p:
-        return error_response(404, "Not Found", [{"field":"id","code":"NOT_FOUND","message":"Person not found"}])
+        return error_response(404, "Not Found", [{"field":"id","code":"NOT_FOUND","message":"Product not found"}])
 
     data = request.get_json() or {}
-    errors = validate_person_payload(data, require_all=False)
+    errors = validate_product_payload(data, require_all=False)
     if errors:
         return error_response(400, "Bad Request", errors)
 
-    if "first_name" in data:
-        p.first_name = data.get("first_name").strip()
-    if "last_name" in data:
-        p.last_name = data.get("last_name").strip()
+    if "name" in data:
+        p.name = data.get("name").strip()
     if "email" in data:
-        new_email = data.get("email")
-        if Person.query.filter((Person.email == new_email) & (Person.id != pid)).first():
-            return error_response(409, "Conflict", [{"field":"email","code":"DUPLICATE","message":"Email already exists"}])
-        p.email = new_email
-    if "birth_date" in data:
-        p.birth_date = datetime.fromisoformat(data.get("birth_date")).date() if data.get("birth_date") else None
-    if "salary" in data:
-        p.salary = data.get("salary")
-    if "department" in data:
-        p.department = data.get("department")
-    if "personal_code" in data:
-        new_code = data.get("personal_code")
-        if Person.query.filter((Person.personal_code == new_code) & (Person.id != pid)).first():
-            return error_response(409, "Conflict", [{"field":"personal_code","code":"DUPLICATE","message":"Personal code already exists"}])
-        p.personal_code = new_code
+        p.email = data.get("email")
+    if "birthDate" in data or "birth_date" in data:
+        p.birth_date = (datetime.fromisoformat(data.get("birthDate") or data.get("birth_date")).date() 
+                        if (data.get("birthDate") or data.get("birth_date")) else None)
+    if "price" in data:
+        p.price = data.get("price")
+    if "stock" in data:
+        p.stock = data.get("stock")
+    if "code" in data or "sku" in data:
+        new_code = data.get("code") or data.get("sku")
+        if Product.query.filter(((Product.sku == new_code) | (Product.code == new_code)) & (Product.id != pid)).first():
+            return error_response(409, "Conflict", [{"field":"code","code":"DUPLICATE","message":"Product code already exists"}])
+        p.sku = new_code
+        p.code = new_code
 
     db.session.commit()
     return jsonify(p.to_dict()), 200
 
-@app.route("/persons/<int:pid>", methods=["DELETE"])
-def delete_person(pid):
-    p = Person.query.get(pid)
+@app.route("/products/<int:pid>", methods=["DELETE"])
+def delete_product(pid):
+    p = Product.query.get(pid)
     if not p:
-        return error_response(404, "Not Found", [{"field":"id","code":"NOT_FOUND","message":"Person not found"}])
+        return error_response(404, "Not Found", [{"field":"id","code":"NOT_FOUND","message":"Product not found"}])
     db.session.delete(p)
     db.session.commit()
     return jsonify({"message":"Deleted"}), 200
+
 
 if __name__ == "__main__":
     with app.app_context():
