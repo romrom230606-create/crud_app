@@ -29,6 +29,47 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+with app.app_context():
+    try:
+       
+        with db.engine.connect() as conn:
+           
+            conn.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS products (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    sku VARCHAR(100) NOT NULL UNIQUE,
+                    price NUMERIC(10,2) NOT NULL CHECK (price >= 0),
+                    stock INT NOT NULL DEFAULT 0 CHECK (stock >= 0),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+           
+            conn.execute(db.text("""
+                DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                   WHERE table_name='products' AND column_name='email') THEN
+                        ALTER TABLE products ADD COLUMN email VARCHAR(255);
+                    END IF;
+                    
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                   WHERE table_name='products' AND column_name='birth_date') THEN
+                        ALTER TABLE products ADD COLUMN birth_date DATE;
+                    END IF;
+                    
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                   WHERE table_name='products' AND column_name='code') THEN
+                        ALTER TABLE products ADD COLUMN code VARCHAR(100);
+                    END IF;
+                END $$;
+            """))
+            conn.commit()
+        print("✅ Database migrations applied")
+    except Exception as e:
+        print(f"❌ Migration error: {e}")
 
 
 def error_response(status, error, field_errors):
