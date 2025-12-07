@@ -52,4 +52,4 @@ The API returns structured error responses:
 - Backend: Flask, SQLAlchemy, PostgreSQL
 - Frontend: HTML, JavaScript
 - Deployment: Render + GitHub Actions
-- Testing: pytest
+- Testing: pytest 
